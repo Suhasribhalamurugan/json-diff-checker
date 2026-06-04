@@ -4,31 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>JSON Diff Checker</title>
-  <script>
-    (function() {
-      function loadScript(src, onSuccess, onFail) {
-        var s = document.createElement('script');
-        s.src = src;
-        s.onload = onSuccess;
-        s.onerror = onFail;
-        document.head.appendChild(s);
-      }
-      var primary   = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      var secondary = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
-      loadScript(primary, function() {
-        console.log('SheetJS loaded');
-      }, function() {
-        loadScript(secondary, function() {
-          console.log('SheetJS loaded from unpkg');
-        }, function() {
-          document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('errorMsg').textContent = '⚠ Failed to load Excel parser. Check your internet connection.';
-            document.getElementById('errorMsg').style.display = 'block';
-          });
-        });
-      });
-    })();
-  </script>
+  <script src="xlsx.full.min.js"></script>
   <style>
 </header>
 <div class="container">
