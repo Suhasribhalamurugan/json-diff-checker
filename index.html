@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JSON Diff Checker</title>
+<script src="xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Arial,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+header{background:#1a1f2e;border-bottom:2px solid #c8102e;padding:18px 32px}
+.logo{font-size:22px;font-weight:700;color:#c8102e}
+.sub{font-size:14px;color:#94a3b8;margin-top:4px}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.card{background:#1a1f2e;border:2px dashed #334155;border-radius:12px;padding:24px}
+.ct{font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;margin-bottom:12px}
+.btn{background:#c8102e;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.btn:hover{background:#a50d26}
+.bcmp{display:block;margin:0 auto 24px;padding:12px 40px;font-size:15px;font-weight:700;border-radius:10px;background:linear-gradient(135deg,#c8102e,#a50d26);color:#fff;border:none;cursor:pointer}
+.bcmp:disabled{opacity:0.4;cursor:not-allowed}
+input[type=file]{display:none}
+.fn{font-size:13px;color:#64748b;margin-top:8px}
+.fn.ok{color:#4ade80}
+select{background:#0f1117;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:6px 10px;font-size:13px;width:100%;margin-top:6px}
+</style>
+<style>
+.ob{background:#1a1f2e;border-radius:10px;padding:16px 20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+.oi{display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8;cursor:pointer}
+.oi input{accent-color:#c8102e;width:15px;height:15px}
+.err{background:#3b1a1a;border:1px solid #f87171;border-radius:8px;padding:12px 16px;color:#f87171;font-size:13px;margin-bottom:16px;display:none}
+.sum{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.badge{border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.bt{background:#1e293b;color:#94a3b8}
+.bm{background:#3b1a1a;color:#f87171}
+.be{background:#1a2e1a;color:#4ade80}
+.bv{background:#2e2a1a;color:#fbbf24}
+.bk{background:#1a2433;color:#60a5fa}
+.bn{font-size:20px;font-weight:800}
+.fb{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.ff{border:1px solid #334155;background:#1a1f2e;color:#94a3b8;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.ff.active,.ff:hover{background:#c8102e;color:#fff;border-color:#c8102e}
+.ex{background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.ex:hover{background:#334155;color:#e2e8f0}
+.sb{margin-left:auto;background:#1a1f2e;border:1px solid #334155;border-radius:6px;padding:6px 12px;color:#e2e8f0;font-size:13px;width:220px}
+.sb::placeholder{color:#475569}
+.tw{background:#1a1f2e;border-radius:12px;overflow:hidden;border:1px solid #1e293b}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#0d1b2a;border-bottom:2px solid #c8102e}
+th{padding:12px 16px;text-align:left;font-weight:700;color:#94a3b8;text-transform:uppercase;font-size:11px}
+tbody tr{border-bottom:1px solid #1e293b}
+tbody tr:hover{background:#1e293b}
+td{padding:10px 16px;vertical-align:top;word-break:break-all}
+.mo{font-family:Consolas,monospace;font-size:12px}
+.pill{display:inline-block;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
+.pm{background:#3b1a1a;color:#f87171}
+.pe{background:#1a2e1a;color:#4ade80}
+.pv{background:#2e2a1a;color:#fbbf24}
+.pk{background:#1a2433;color:#60a5fa}
+.vm{color:#f87171;font-style:italic}
+.vo{color:#4ade80}
+.va{color:#fbbf24}
+.vb{color:#60a5fa}
+.emp{text-align:center;padding:50px;color:#475569;font-size:14px}
+.pgr{display:flex;justify-content:center;gap:8px;padding:14px;border-top:1px solid #1e293b;flex-wrap:wrap}
+.pb{background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer}
+.pb:hover,.pb.active{background:#c8102e;color:#fff;border-color:#c8102e}
+.pi{font-size:12px;color:#64748b;align-self:center}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.sb{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚡ TrafGPT</div>
+  <div class="sub">JSON Mapping Diff Checker</div>
+</header>
+<div class="wrap">
+  <div class="grid">
+    <div class="card">
+      <div class="ct">📊 Excel File (JSON Mappings)</div>
+      <button class="btn" onclick="document.getElementById('ef').click()">Choose File</button>
+      <input type="file" id="ef" accept=".xlsx,.xls,.csv" onchange="onExcel(this)"/>
+      <div class="fn" id="efn">No file selected</div>
+      <div id="sw" style="display:none;margin-top:12px">
+        <label style="font-size:12px;color:#94a3b8">Sheet:</label>
+        <select id="ss" onchange="loadSheet()"></select>
+      </div>
+      <div id="cw" style="display:none;margin-top:12px">
+        <label style="font-size:12px;color:#94a3b8">Key Path Column:</label>
+        <select id="ck" onchange="buildData();chk()"></select>
+        <label style="font-size:12px;color:#94a3b8;margin-top:8px;display:block">Value Column (optional):</label>
+        <select id="cv" onchange="buildData();chk()"></select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">📄 JSON File</div>
+      <button class="btn" onclick="document.getElementById('jf').click()">Choose File</button>
+      <input type="file" id="jf" accept=".json" onchange="onJson(this)"/>
+      <div class="fn" id="jfn">No file selected</div>
+    </div>
+  </div>
+  <div class="ob">
+    <span style="font-size:13px;font-weight:600">Options:</span>
+    <label class="oi"><input type="checkbox" id="oc" checked/> Case-sensitive</label>
+    <label class="oi"><input type="checkbox" id="ov" checked/> Compare values</label>
+    <label class="oi"><input type="checkbox" id="om"/> Show matches</label>
+    <label class="oi"><input type="checkbox" id="od" checked/> Dot notation</label>
+  </div>
+  <div class="err" id="err"></div>
+  <button class="bcmp" id="cb" onclick="compare()" disabled>🔍 Compare</button>
+  <div id="res" style="display:none">
+    <div class="sum" id="sum"></div>
+    <div class="fb">
+      <button class="ff active" onclick="setF('all',this)">All</button>
+      <button class="ff" onclick="setF('missing',this)">Missing in JSON</button>
+      <button class="ff" onclick="setF('extra',this)">Extra in JSON</button>
+      <button class="ff" onclick="setF('mismatch',this)">Value Mismatch</button>
+      <button class="ff" onclick="setF('match',this)">Matching</button>
+      <button class="ex" onclick="expCSV()">⬇ Export CSV</button>
+      <input class="sb" type="text" id="sb" placeholder="🔍 Search key..." oninput="applyF()"/>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>Key Path</th><th>Status</th><th>Excel Value</th><th>JSON Value</th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+      <div id="emp" class="emp" style="display:none">No results match the filter.</div>
+      <div class="pgr" id="pgr"></div>
+    </div>
+  </div>
+</div>
+<script>
+var wb=null,rows=[],exD=[],jD={},allR=[],filR=[],cF='all',cP=1,PS=50;
+function onExcel(inp){
+  var f=inp.files[0];if(!f)return;
+  document.getElementById('efn').textContent=f.name;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var sl=document.getElementById('ss');
+      sl.innerHTML=wb.SheetNames.map(function(s){return'<option>'+s+'</option>'}).join('');
+      document.getElementById('sw').style.display='block';
+      loadSheet();
+      document.getElementById('efn').className='fn ok';
+    }catch(ex){showE('Excel error: '+ex.message);}
+  };
+  r.readAsArrayBuffer(f);
+}
+function loadSheet(){
+  if(!wb)return;
+  var ws=wb.Sheets[document.getElementById('ss').value];
+  rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(rows.length<2){showE('Sheet empty');return;}
+  var h=rows[0].map(String);
+  var o='<option value="">— select —</option>'+h.map(function(x,i){return'<option value="'+i+'">'+(x||'Col '+(i+1))+'</option>'}).join('');
+  document.getElementById('ck').innerHTML=o;
+  document.getElementById('cv').innerHTML='<option value="">— none —</option>'+h.map(function(x,i){return'<option value="'+i+'">'+(x||'Col '+(i+1))+'</option>'}).join('');
+  var lo=h.map(function(x){return x.toLowerCase()});
+  var ki=lo.findIndex(function(x){return x.includes('key')||x.includes('path')||x.includes('param')||x.includes('field')||x.includes('name')});
+  var vi=lo.findIndex(function(x){return x.includes('val')||x.includes('type')||x.includes('desc')});
+  if(ki>=0)document.getElementById('ck').value=ki;
+  if(vi>=0)document.getElementById('cv').value=vi;
+  document.getElementById('cw').style.display='block';
+  buildData();chk();
+}
+function buildData(){
+  var ki=parseInt(document.getElementById('ck').value);
+  var vi=document.getElementById('cv').value;
+  if(isNaN(ki)){exD=[];return;}
+  exD=[];
+  for(var i=1;i<rows.length;i++){
+    var k=String(rows[i][ki]||'').trim();
+    if(!k)continue;
+    var v=vi!==''?String(rows[i][parseInt(vi)]||'').trim():undefined;
+    exD.push({key:k,val:v});
+  }
+}
+function onJson(inp){
+  var f=inp.files[0];if(!f)return;
+  document.getElementById('jfn').textContent=f.name;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{jD=JSON.parse(e.target.result);document.getElementById('jfn').className='fn ok';chk();}
+    catch(ex){showE('JSON error: '+ex.message);}
+  };
+  r.readAsText(f);
+}
+function flat(o,p,d,r){
+  p=p||'';d=d!==false;r=r||{};
+  if(o===null||typeof o!=='object'){r[p]=o;return r;}
+  if(Array.isArray(o)){o.forEach(function(v,i){flat(v,p?p+'['+i+']':'['+i+']',d,r);});}
+  else{Object.keys(o).forEach(function(k){flat(o[k],p?(d?p+'.'+k:p+'/'+k):k,d,r);});}
+  return r;
+}
+</script>
+<script>
+function compare(){
+  clearE();buildData();
+  if(!exD.length){showE('No Excel data. Check column mapping.');return;}
+  if(!jD||typeof jD!=='object'){showE('JSON not loaded.');return;}
+  var cs=document.getElementById('oc').checked;
+  var cv=document.getElementById('ov').checked;
+  var sm=document.getElementById('om').checked;
+  var dot=document.getElementById('od').checked;
+  var fj=flat(jD,'',dot);
+  var nm=function(k){return cs?k:k.toLowerCase();};
+  var jl={};Object.keys(fj).forEach(function(k){jl[nm(k)]={v:fj[k]};});
+  var el={};exD.forEach(function(d){el[nm(d.key)]=d;});
+  allR=[];
+  exD.forEach(function(d){
+    var nk=nm(d.key);
+    if(jl[nk]!==undefined){
+      var jv=String(jl[nk].v!=null?jl[nk].v:'');
+      var ev=d.val!==undefined?String(d.val):undefined;
+      if(cv&&ev!==undefined&&ev!==''&&ev!==jv){allR.push({key:d.key,st:'mismatch',ev:ev,jv:jv});}
+      else if(sm){allR.push({key:d.key,st:'match',ev:ev!=null?ev:'—',jv:jv});}
+    }else{allR.push({key:d.key,st:'missing',ev:d.val!=null?String(d.val):'—',jv:null});}
+  });
+  Object.keys(fj).forEach(function(k){
+    if(!el[nm(k)]){allR.push({key:k,st:'extra',ev:null,jv:String(fj[k]!=null?fj[k]:'')});}
+  });
+  var ord={missing:0,extra:1,mismatch:2,match:3};
+  allR.sort(function(a,b){return ord[a.st]-ord[b.st];});
+  renderSum();applyF();
+  document.getElementById('res').style.display='block';
+  document.getElementById('res').scrollIntoView({behavior:'smooth'});
+}
+function renderSum(){
+  var c={missing:0,extra:0,mismatch:0,match:0};
+  allR.forEach(function(r){c[r.st]++;});
+  document.getElementById('sum').innerHTML=
+    '<div class="badge bt"><span class="bn">'+allR.length+'</span> Total</div>'+
+    '<div class="badge bm"><span class="bn">'+c.missing+'</span> Missing in JSON</div>'+
+    '<div class="badge be"><span class="bn">'+c.extra+'</span> Extra in JSON</div>'+
+    '<div class="badge bv"><span class="bn">'+c.mismatch+'</span> Mismatch</div>'+
+    '<div class="badge bk"><span class="bn">'+c.match+'</span> Matching</div>';
+}
+function setF(f,btn){
+  cF=f;cP=1;
+  document.querySelectorAll('.ff').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');applyF();
+}
+function applyF(){
+  var s=document.getElementById('sb').value.toLowerCase();
+  filR=allR.filter(function(r){
+    if(cF!=='all'&&r.st!==cF)return false;
+    if(s&&!r.key.toLowerCase().includes(s))return false;
+    return true;
+  });
+  cP=1;renderT();
+}
+function renderT(){
+  var tb=document.getElementById('tb');
+  var em=document.getElementById('emp');
+  if(!filR.length){tb.innerHTML='';em.style.display='block';document.getElementById('pgr').innerHTML='';return;}
+  em.style.display='none';
+  var st=(cP-1)*PS;
+  var pg=filR.slice(st,st+PS);
+  var lb={missing:'Missing',extra:'Extra',mismatch:'Mismatch',match:'Match'};
+  var pc={missing:'pm',extra:'pe',mismatch:'pv',match:'pk'};
+  tb.innerHTML=pg.map(function(r,i){
+    var ec,jc;
+    if(r.st==='missing'){ec='<span class="vo">'+esc(r.ev)+'</span>';jc='<span class="vm">not found</span>';}
+    else if(r.st==='extra'){ec='<span class="vm">not in Excel</span>';jc='<span class="vo">'+esc(r.jv)+'</span>';}
+    else if(r.st==='mismatch'){ec='<span class="va">'+esc(r.ev)+'</span>';jc='<span class="vb">'+esc(r.jv)+'</span>';}
+    else{ec='<span class="vo">'+esc(r.ev)+'</span>';jc='<span class="vo">'+esc(r.jv)+'</span>';}
+    return'<tr><td style="color:#475569;font-size:11px">'+(st+i+1)+'</td><td class="mo">'+esc(r.key)+'</td><td><span class="pill '+pc[r.st]+'">'+lb[r.st]+'</span></td><td class="mo">'+ec+'</td><td class="mo">'+jc+'</td></tr>';
+  }).join('');
+  renderP();
+}
+function renderP(){
+  var tot=Math.ceil(filR.length/PS);
+  if(tot<=1){document.getElementById('pgr').innerHTML='';return;}
+  var h='';
+  if(cP>1)h+='<button class="pb" onclick="gp('+(cP-1)+')">‹</button>';
+  var s=Math.max(1,cP-2),e=Math.min(tot,cP+2);
+  for(var p=s;p<=e;p++)h+='<button class="pb'+(p===cP?' active':'')+'" onclick="gp('+p+')">'+p+'</button>';
+  if(cP<tot)h+='<button class="pb" onclick="gp('+(cP+1)+')">›</button>';
+  h+='<span class="pi">'+filR.length+' results</span>';
+  document.getElementById('pgr').innerHTML=h;
+}
+function gp(p){cP=p;renderT();}
+function expCSV(){
+  var r=[['Key Path','Status','Excel Value','JSON Value']];
+  filR.forEach(function(d){r.push([d.key,d.st,d.ev!=null?d.ev:'',d.jv!=null?d.jv:'']);});
+  var csv=r.map(function(row){return row.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='diff.csv';a.click();
+}
+function esc(s){if(s==null)return'—';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showE(m){var e=document.getElementById('err');e.textContent='⚠ '+m;e.style.display='block';}
+function clearE(){document.getElementById('err').style.display='none';}
+function chk(){
+  var ki=document.getElementById('ck').value;
+  document.getElementById('cb').disabled=!(exD.length>0&&jD&&typeof jD==='object'&&ki!=='');
+}
+</script>
+</body>
+</html>
